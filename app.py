@@ -220,11 +220,10 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
 
-        c4, c5, c6 = st.columns(3)
-        rg = c4.text_input("RG", value=dados_atuais.get("rg", ""), placeholder="00.000.000-0")
+        c4, c5 = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
-        sexo = c5.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
+        sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
 
         civil_opcoes = ["Selecione", "Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)"]
         civil_idx = (
@@ -232,7 +231,7 @@ def formulario_paciente():
             if dados_atuais.get("estado_civil") in civil_opcoes
             else 0
         )
-        estado_civil = c6.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
+        estado_civil = c5.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
 
         st.markdown("**📍 Endereço**")
         c7, c8 = st.columns([1, 2])
@@ -273,7 +272,6 @@ def formulario_paciente():
                     "nome_completo": nome.strip(),
                     "data_nascimento": data_nasc.isoformat() if data_nasc else "",
                     "cpf": formatar_cpf(cpf),
-                    "rg": rg.strip(),
                     "sexo": sexo if sexo != "Selecione" else "",
                     "estado_civil": estado_civil if estado_civil != "Selecione" else "",
                     "cep": formatar_cep(cep),
