@@ -15,7 +15,7 @@ from utils import validar_cpf, formatar_cpf, formatar_cep, ESTADOS_BR
 # Configuração da página
 # ------------------------------------------------------------------
 st.set_page_config(
-    page_title="Clínica Vida - Sistema de Gestão",
+    page_title="Clínica PTF - Sistema de Gestão",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -109,7 +109,7 @@ with st.sidebar:
             <div style="background:rgba(255,255,255,0.15); border-radius:8px; width:38px; height:38px;
                         display:flex; align-items:center; justify-content:center; font-size:20px;">🏥</div>
             <div>
-                <div style="font-weight:700; font-size:1.05rem; line-height:1.1;">Clínica Vida</div>
+                <div style="font-weight:700; font-size:1.05rem; line-height:1.1;">Clínica PTF</div>
                 <div style="font-size:0.75rem; opacity:0.85;">Sistema de Gestão</div>
             </div>
         </div>
@@ -220,7 +220,7 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
 
-        c4, c5 = st.columns(2)
+        c4, c5, = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
         sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
@@ -234,26 +234,26 @@ def formulario_paciente():
         estado_civil = c5.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
 
         st.markdown("**📍 Endereço**")
-        c7, c8 = st.columns([1, 2])
-        cep = c7.text_input("CEP", value=dados_atuais.get("cep", ""), placeholder="00000-000")
-        logradouro = c8.text_input(
+        c6, c7 = st.columns([1, 2])
+        cep = c6.text_input("CEP", value=dados_atuais.get("cep", ""), placeholder="00000-000")
+        logradouro = c7.text_input(
             "Logradouro", value=dados_atuais.get("logradouro", ""), placeholder="Rua, Avenida, etc."
         )
 
-        c9, c10, c11 = st.columns(3)
-        numero = c9.text_input("Número", value=dados_atuais.get("numero", ""), placeholder="Nº")
-        complemento = c10.text_input(
+        c8, c9, c10 = st.columns(3)
+        numero = c8.text_input("Número", value=dados_atuais.get("numero", ""), placeholder="Nº")
+        complemento = c9.text_input(
             "Complemento", value=dados_atuais.get("complemento", ""), placeholder="Apto, Sala, etc."
         )
-        bairro = c11.text_input("Bairro", value=dados_atuais.get("bairro", ""))
+        bairro = c10.text_input("Bairro", value=dados_atuais.get("bairro", ""))
 
-        c12, c13 = st.columns(2)
-        cidade = c12.text_input("Cidade", value=dados_atuais.get("cidade", ""))
+        c11, c12 = st.columns(2)
+        cidade = c11.text_input("Cidade", value=dados_atuais.get("cidade", ""))
         estado_opcoes = ["Selecione"] + ESTADOS_BR
         estado_idx = (
             estado_opcoes.index(dados_atuais["estado"]) if dados_atuais.get("estado") in estado_opcoes else 0
         )
-        estado = c13.selectbox("Estado", estado_opcoes, index=estado_idx)
+        estado = c12.selectbox("Estado", estado_opcoes, index=estado_idx)
 
         st.write("")
         col_a, col_b = st.columns([1, 5])
@@ -514,7 +514,7 @@ def pagina_configuracoes():
     st.subheader("🏥 Dados da Clínica")
     with st.form("form_config_clinica"):
         c1, c2 = st.columns(2)
-        nome_clinica = c1.text_input("Nome da Clínica", value="Clínica Vida")
+        nome_clinica = c1.text_input("Nome da Clínica", value="Clínica PTF")
         telefone = c2.text_input("Telefone de Contato", placeholder="(00) 00000-0000")
         endereco_clinica = st.text_input("Endereço da Clínica", placeholder="Rua, número, bairro, cidade")
         if st.form_submit_button("Salvar Configurações", type="primary"):
