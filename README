@@ -1,0 +1,48 @@
+# Clínica Vida - Sistema de Gestão
+
+Dashboard em Streamlit para cadastro e gestão de pacientes, inspirado no layout de referência (menu lateral azul/teal).
+
+## Estrutura
+
+```
+clinica_vida/
+├── app.py            # App principal (interface e páginas)
+├── database.py        # Camada de acesso ao banco (SQLite)
+├── utils.py            # Validação de CPF, formatação de CEP/CPF
+└── requirements.txt    # Dependências
+```
+
+## Como rodar
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+O navegador abrirá automaticamente em `http://localhost:8501`.
+
+Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira execução — não precisa configurar nada.
+
+## Funcionalidades
+
+- **Início**: métricas gerais (total de pacientes, consultas do dia, pendentes) e últimos cadastros.
+- **Pacientes**:
+  - Cadastro com validação de CPF (algoritmo de dígitos verificadores) e bloqueio de CPF duplicado.
+  - Edição e exclusão de pacientes.
+  - Busca por nome ou CPF.
+- **Agenda**:
+  - Agendamento de consultas vinculadas a um paciente (data, hora, tipo, médico).
+  - Alteração de status (Agendada, Confirmada, Concluída, Cancelada) direto na lista.
+  - Filtro por data.
+- **Relatórios**:
+  - Gráfico de pacientes por sexo (pizza) e por estado (barras).
+  - Gráfico de consultas por status.
+  - Exportação de pacientes e consultas em CSV.
+- **Configurações**: dados básicos da clínica e informações do banco de dados.
+
+## Próximos passos sugeridos
+
+- Persistir as configurações da clínica em uma tabela `configuracoes` (hoje ficam só na sessão).
+- Autenticação de usuários (ex: `streamlit-authenticator`).
+- Integração com API de CEP (ex: ViaCEP) para autopreencher endereço.
+- Deploy no Streamlit Community Cloud ou em um servidor próprio.
