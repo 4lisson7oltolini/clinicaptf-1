@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
-from datetime import date
+import plotly.express as px
+from datetime import date, datetime
 
 from database import (
     init_db, inserir_paciente, atualizar_paciente, listar_pacientes,
     obter_paciente, excluir_paciente, contar_pacientes,
+    inserir_consulta, listar_consultas, atualizar_status_consulta,
+    excluir_consulta, contar_consultas_hoje,
 )
 from utils import validar_cpf, formatar_cpf, formatar_cep, ESTADOS_BR
 
@@ -148,15 +151,18 @@ def pagina_inicio():
             unsafe_allow_html=True,
         )
     with col2:
+        consultas_hoje = contar_consultas_hoje(date.today().isoformat())
         st.markdown(
-            "<div class='cv-metric'><div style='color:#6b7c93; font-size:0.85rem;'>Consultas Hoje</div>"
-            "<div style='font-size:1.8rem; font-weight:700; color:#1596ac;'>0</div></div>",
+            f"<div class='cv-metric'><div style='color:#6b7c93; font-size:0.85rem;'>Consultas Hoje</div>"
+            f"<div style='font-size:1.8rem; font-weight:700; color:#1596ac;'>{consultas_hoje}</div></div>",
             unsafe_allow_html=True,
         )
     with col3:
+        todas_consultas = listar_consultas()
+        pendentes = len([c for c in todas_consultas if c["status"] == "Agendada"])
         st.markdown(
-            "<div class='cv-metric'><div style='color:#6b7c93; font-size:0.85rem;'>Relatórios Pendentes</div>"
-            "<div style='font-size:1.8rem; font-weight:700; color:#1596ac;'>0</div></div>",
+            f"<div class='cv-metric'><div style='color:#6b7c93; font-size:0.85rem;'>Consultas Pendentes</div>"
+            f"<div style='font-size:1.8rem; font-weight:700; color:#1596ac;'>{pendentes}</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -214,10 +220,11 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
 
-        c4, c5 = st.columns(2)
+        c4, c5, c6 = st.columns(3)
+        rg = c4.text_input("RG", value=dados_atuais.get("rg", ""), placeholder="00.000.000-0")
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
-        sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
+        sexo = c5.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
 
         civil_opcoes = ["Selecione", "Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)"]
         civil_idx = (
@@ -225,7 +232,7 @@ def formulario_paciente():
             if dados_atuais.get("estado_civil") in civil_opcoes
             else 0
         )
-        estado_civil = c5.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
+        estado_civil = c6.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
 
         st.markdown("**📍 Endereço**")
         c7, c8 = st.columns([1, 2])
@@ -266,6 +273,7 @@ def formulario_paciente():
                     "nome_completo": nome.strip(),
                     "data_nascimento": data_nasc.isoformat() if data_nasc else "",
                     "cpf": formatar_cpf(cpf),
+                    "rg": rg.strip(),
                     "sexo": sexo if sexo != "Selecione" else "",
                     "estado_civil": estado_civil if estado_civil != "Selecione" else "",
                     "cep": formatar_cep(cep),
@@ -331,11 +339,203 @@ def pagina_pacientes():
 
 
 # ------------------------------------------------------------------
-# Páginas placeholder (Agenda, Relatórios, Configurações)
+# Página: Agenda
 # ------------------------------------------------------------------
-def pagina_placeholder(nome, icone):
-    st.title(nome)
-    st.info(f"{icone} A seção **{nome}** ainda será implementada.")
+def pagina_agenda():
+    st.title("Agenda")
+    st.markdown("<p class='cv-subtitulo'>Gerencie as consultas dos pacientes</p>", unsafe_allow_html=True)
+    st.write("")
+
+    aba_nova, aba_lista = st.tabs(["➕ Nova Consulta", "📆 Consultas"])
+
+    with aba_nova:
+        pacientes = listar_pacientes()
+        if not pacientes:
+            st.warning("Cadastre ao menos um paciente antes de agendar uma consulta.")
+        else:
+            opcoes = {f"{p['nome_completo']} (CPF: {p['cpf']})": p["id"] for p in pacientes}
+            with st.form("form_consulta", clear_on_submit=True):
+                c1, c2, c3 = st.columns(3)
+                paciente_label = c1.selectbox("Paciente*", list(opcoes.keys()))
+                data_consulta = c2.date_input("Data*", value=date.today(), format="DD/MM/YYYY")
+                hora_consulta = c3.time_input("Hora*", value=datetime.now().time().replace(second=0, microsecond=0))
+
+                c4, c5 = st.columns(2)
+                tipo = c4.selectbox(
+                    "Tipo de Consulta", ["Consulta de Rotina", "Retorno", "Exame", "Urgência"]
+                )
+                medico = c5.text_input("Médico(a) Responsável", placeholder="Dr(a). Nome")
+                obs = st.text_area("Observações", placeholder="Alguma observação sobre a consulta")
+
+                if st.form_submit_button("Agendar Consulta", type="primary"):
+                    dados = {
+                        "paciente_id": opcoes[paciente_label],
+                        "data": data_consulta.isoformat(),
+                        "hora": hora_consulta.strftime("%H:%M"),
+                        "tipo": tipo,
+                        "medico": medico.strip(),
+                        "observacoes": obs.strip(),
+                    }
+                    sucesso, msg = inserir_consulta(dados)
+                    if sucesso:
+                        st.success(msg)
+                        st.rerun()
+                    else:
+                        st.error(msg)
+
+    with aba_lista:
+        filtro_data = st.date_input(
+            "Filtrar por data", value=None, format="DD/MM/YYYY", key="filtro_agenda"
+        )
+        consultas = listar_consultas(filtro_data.isoformat() if filtro_data else None)
+
+        if not consultas:
+            st.info("Nenhuma consulta encontrada.")
+        else:
+            status_cores = {
+                "Agendada": "🟡", "Confirmada": "🟢", "Concluída": "🔵", "Cancelada": "🔴"
+            }
+            for c in consultas:
+                with st.container(border=True):
+                    col1, col2, col3 = st.columns([3, 2, 2])
+                    data_fmt = datetime.fromisoformat(c["data"]).strftime("%d/%m/%Y")
+                    col1.markdown(f"**{c['nome_completo']}**  \n{c['tipo'] or '—'}")
+                    col2.markdown(f"📅 {data_fmt} às {c['hora']}  \n👨‍⚕️ {c['medico'] or '—'}")
+
+                    status_atual = c["status"]
+                    novo_status = col3.selectbox(
+                        "Status",
+                        list(status_cores.keys()),
+                        index=list(status_cores.keys()).index(status_atual),
+                        key=f"status_{c['id']}",
+                        label_visibility="collapsed",
+                    )
+                    if novo_status != status_atual:
+                        atualizar_status_consulta(c["id"], novo_status)
+                        st.rerun()
+
+                    if c.get("observacoes"):
+                        st.caption(f"📝 {c['observacoes']}")
+
+                    if st.button("🗑️ Cancelar/Excluir", key=f"del_consulta_{c['id']}"):
+                        excluir_consulta(c["id"])
+                        st.rerun()
+
+
+# ------------------------------------------------------------------
+# Página: Relatórios
+# ------------------------------------------------------------------
+def pagina_relatorios():
+    st.title("Relatórios")
+    st.markdown("<p class='cv-subtitulo'>Visão analítica dos dados da clínica</p>", unsafe_allow_html=True)
+    st.write("")
+
+    pacientes = listar_pacientes()
+    consultas = listar_consultas()
+
+    if not pacientes:
+        st.info("Cadastre pacientes para visualizar relatórios.")
+        return
+
+    df_pac = pd.DataFrame(pacientes)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Pacientes por Sexo")
+        if df_pac["sexo"].replace("", pd.NA).notna().any():
+            contagem_sexo = df_pac["sexo"].replace("", "Não informado").value_counts().reset_index()
+            contagem_sexo.columns = ["Sexo", "Total"]
+            fig = px.pie(
+                contagem_sexo, names="Sexo", values="Total", hole=0.5,
+                color_discrete_sequence=["#1596ac", "#66c2d4", "#0d7c90", "#a3dbe6"],
+            )
+            fig.update_layout(margin=dict(t=10, b=10, l=10, r=10), showlegend=True)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Sem dados de sexo cadastrados.")
+
+    with col2:
+        st.subheader("Pacientes por Estado")
+        if df_pac["estado"].replace("", pd.NA).notna().any():
+            contagem_estado = df_pac["estado"].replace("", "Não informado").value_counts().reset_index()
+            contagem_estado.columns = ["Estado", "Total"]
+            fig = px.bar(
+                contagem_estado, x="Estado", y="Total",
+                color_discrete_sequence=["#1596ac"],
+            )
+            fig.update_layout(margin=dict(t=10, b=10, l=10, r=10))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Sem dados de estado cadastrados.")
+
+    st.write("")
+    st.subheader("Consultas por Status")
+    if consultas:
+        df_con = pd.DataFrame(consultas)
+        contagem_status = df_con["status"].value_counts().reset_index()
+        contagem_status.columns = ["Status", "Total"]
+        fig = px.bar(
+            contagem_status, x="Status", y="Total", color="Status",
+            color_discrete_map={
+                "Agendada": "#f4b400", "Confirmada": "#0f9d58",
+                "Concluída": "#1596ac", "Cancelada": "#db4437",
+            },
+        )
+        fig.update_layout(margin=dict(t=10, b=10, l=10, r=10), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Nenhuma consulta registrada ainda.")
+
+    st.write("")
+    st.subheader("Exportar dados")
+    col_a, col_b = st.columns(2)
+    csv_pacientes = df_pac.to_csv(index=False).encode("utf-8-sig")
+    col_a.download_button(
+        "⬇️ Baixar Pacientes (CSV)", data=csv_pacientes,
+        file_name="pacientes_clinica_vida.csv", mime="text/csv",
+        use_container_width=True,
+    )
+    if consultas:
+        csv_consultas = pd.DataFrame(consultas).to_csv(index=False).encode("utf-8-sig")
+        col_b.download_button(
+            "⬇️ Baixar Consultas (CSV)", data=csv_consultas,
+            file_name="consultas_clinica_vida.csv", mime="text/csv",
+            use_container_width=True,
+        )
+
+
+# ------------------------------------------------------------------
+# Página: Configurações
+# ------------------------------------------------------------------
+def pagina_configuracoes():
+    st.title("Configurações")
+    st.markdown("<p class='cv-subtitulo'>Preferências do sistema</p>", unsafe_allow_html=True)
+    st.write("")
+
+    st.subheader("🏥 Dados da Clínica")
+    with st.form("form_config_clinica"):
+        c1, c2 = st.columns(2)
+        nome_clinica = c1.text_input("Nome da Clínica", value="Clínica Vida")
+        telefone = c2.text_input("Telefone de Contato", placeholder="(00) 00000-0000")
+        endereco_clinica = st.text_input("Endereço da Clínica", placeholder="Rua, número, bairro, cidade")
+        if st.form_submit_button("Salvar Configurações", type="primary"):
+            st.success("Configurações salvas para esta sessão.")
+            st.caption(
+                "Obs: para persistir essas informações entre execuções, "
+                "elas podem ser salvas em um arquivo `config.json` ou em uma tabela `configuracoes` no banco."
+            )
+
+    st.write("")
+    st.subheader("🎨 Aparência")
+    tema = st.radio("Tema da tabela de pacientes", ["Compacto", "Confortável"], horizontal=True)
+    st.caption(f"Tema selecionado: **{tema}** (aplicação visual pode ser expandida conforme necessidade).")
+
+    st.write("")
+    st.subheader("💾 Banco de Dados")
+    total_pac = contar_pacientes()
+    st.write(f"O sistema utiliza um banco **SQLite local** (`clinica_vida.db`) com **{total_pac}** paciente(s) cadastrado(s).")
+    st.caption("Para reiniciar o sistema do zero, apague o arquivo `clinica_vida.db` na pasta do projeto.")
 
 
 # ------------------------------------------------------------------
@@ -347,8 +547,8 @@ if pagina == "Início":
 elif pagina == "Pacientes":
     pagina_pacientes()
 elif pagina == "Agenda":
-    pagina_placeholder("Agenda", "📅")
+    pagina_agenda()
 elif pagina == "Relatórios":
-    pagina_placeholder("Relatórios", "📄")
+    pagina_relatorios()
 elif pagina == "Configurações":
-    pagina_placeholder("Configurações", "⚙️")
+    pagina_configuracoes()
