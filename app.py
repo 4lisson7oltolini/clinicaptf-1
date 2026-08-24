@@ -56,7 +56,7 @@ st.markdown(
     :root {
         --azul-principal: #1596ac;
         --azul-escuro: #0d7c90;
-        --azul-claro: #e3f6f9;
+        --azul-claro: #e6f7ec;
     }
 
     /* Sidebar */
@@ -122,8 +122,7 @@ with st.sidebar:
     if logo_base64:
         logo_html = (
             f'<img src="data:image/png;base64,{logo_base64}" '
-            f'style="width:38px; height:38px; border-radius:8px; object-fit:cover; '
-            f'background:#ffffff; padding:2px;" />'
+            f'style="width:44px; height:44px; object-fit:contain;" />'
         )
     else:
         logo_html = (
@@ -247,7 +246,7 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
 
-        c4, c5, = st.columns(2)
+        c4, c5 = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
         sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
