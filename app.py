@@ -4,6 +4,7 @@ import plotly.express as px
 import base64
 from pathlib import Path
 from datetime import date, datetime
+from PIL import Image
 
 from database import (
     init_db, inserir_paciente, atualizar_paciente, listar_pacientes,
@@ -14,11 +15,22 @@ from database import (
 from utils import validar_cpf, formatar_cpf, formatar_cep, ESTADOS_BR
 
 # ------------------------------------------------------------------
+# Logo da clínica (carregada antes do set_page_config para servir de favicon)
+# ------------------------------------------------------------------
+_LOGO_PATH = Path(__file__).parent / "assets" / "logo_small.png"
+_pagina_icone = "🏥"
+if _LOGO_PATH.exists():
+    try:
+        _pagina_icone = Image.open(_LOGO_PATH)
+    except Exception:
+        _pagina_icone = "🏥"
+
+# ------------------------------------------------------------------
 # Configuração da página
 # ------------------------------------------------------------------
 st.set_page_config(
     page_title="Clínica PTF - Sistema de Gestão",
-    page_icon="🏥",
+    page_icon=_pagina_icone,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -30,15 +42,12 @@ init_db()
 # ------------------------------------------------------------------
 @st.cache_data
 def carregar_logo_base64():
-    """Carrega a logo em base64 para uso inline no HTML da sidebar."""
-    caminho = Path(__file__).parent / "assets" / "logo_small.png"
-    if caminho.exists():
-        return base64.b64encode(caminho.read_bytes()).decode("utf-8")
+    if _LOGO_PATH.exists():
+        return base64.b64encode(_LOGO_PATH.read_bytes()).decode("utf-8")
     return None
-
-
+ 
 logo_base64 = carregar_logo_base64()
-
+ 
 # ------------------------------------------------------------------
 # Estado de sessão
 # ------------------------------------------------------------------
