@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import base64
+from pathlib import Path
 from datetime import date, datetime
+from PIL import Image
 
 from database import (
     init_db, inserir_paciente, atualizar_paciente, listar_pacientes,
@@ -12,17 +15,39 @@ from database import (
 from utils import validar_cpf, formatar_cpf, formatar_cep, ESTADOS_BR
 
 # ------------------------------------------------------------------
+# Logo da clínica (carregada antes do set_page_config para servir de favicon)
+# ------------------------------------------------------------------
+_LOGO_PATH = Path(__file__).parent / "assets" / "logo_small.png"
+_pagina_icone = "🏥"
+if _LOGO_PATH.exists():
+    try:
+        _pagina_icone = Image.open(_LOGO_PATH)
+    except Exception:
+        _pagina_icone = "🏥"
+
+# ------------------------------------------------------------------
 # Configuração da página
 # ------------------------------------------------------------------
 st.set_page_config(
     page_title="Clínica PTF - Sistema de Gestão",
-    page_icon="🏥",
+    page_icon=_pagina_icone,
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 init_db()
 
+# ------------------------------------------------------------------
+# Logo da clínica
+# ------------------------------------------------------------------
+@st.cache_data
+def carregar_logo_base64():
+    if _LOGO_PATH.exists():
+        return base64.b64encode(_LOGO_PATH.read_bytes()).decode("utf-8")
+    return None
+ 
+logo_base64 = carregar_logo_base64()
+ 
 # ------------------------------------------------------------------
 # Estado de sessão
 # ------------------------------------------------------------------
@@ -40,7 +65,7 @@ st.markdown(
     :root {
         --azul-principal: #1596ac;
         --azul-escuro: #0d7c90;
-        --azul-claro: #e3f6f9;
+        --azul-claro: #e6f7ec;
     }
 
     /* Sidebar */
@@ -103,11 +128,21 @@ st.markdown(
 # Sidebar
 # ------------------------------------------------------------------
 with st.sidebar:
+    if logo_base64:
+        logo_html = (
+            f'<img src="data:image/png;base64,{logo_base64}" '
+            f'style="width:44px; height:44px; object-fit:contain;" />'
+        )
+    else:
+        logo_html = (
+            '<div style="background:rgba(255,255,255,0.15); border-radius:8px; width:38px; height:38px; '
+            'display:flex; align-items:center; justify-content:center; font-size:20px;">🏥</div>'
+        )
+
     st.markdown(
-        """
+        f"""
         <div style="display:flex; align-items:center; gap:10px; padding: 0.5rem 0 1.2rem 0;">
-            <div style="background:rgba(255,255,255,0.15); border-radius:8px; width:38px; height:38px;
-                        display:flex; align-items:center; justify-content:center; font-size:20px;">🏥</div>
+            {logo_html}
             <div>
                 <div style="font-weight:700; font-size:1.05rem; line-height:1.1;">Clínica PTF</div>
                 <div style="font-size:0.75rem; opacity:0.85;">Sistema de Gestão</div>
@@ -118,20 +153,20 @@ with st.sidebar:
     )
 
     menu = [
-        ("🏠", "Início"),
-        ("👥", "Pacientes"),
-        ("📅", "Agenda"),
-        ("📄", "Relatórios"),
-        ("⚙️", "Configurações"),
+        "Início",
+        "Pacientes",
+        "Agenda",
+        "Relatórios",
+        "Configurações",
     ]
-    for icone, nome in menu:
-        if st.button(f"{icone}  {nome}", key=f"nav_{nome}", use_container_width=True):
+    for nome in menu:
+        if st.button(nome, key=f"nav_{nome}", use_container_width=True):
             st.session_state.pagina = nome
             st.session_state.editando_id = None
 
     st.markdown("<div style='flex-grow:1;'></div>", unsafe_allow_html=True)
     st.markdown("---")
-    st.button("❓  Ajuda", use_container_width=True)
+    st.button("Ajuda", use_container_width=True)
 
 
 # ------------------------------------------------------------------
@@ -220,7 +255,7 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
 
-        c4, c5, = st.columns(2)
+        c4, c5 = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
         sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)

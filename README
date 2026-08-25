@@ -9,6 +9,8 @@ clinica_vida/
 ├── app.py            # App principal (interface e páginas)
 ├── database.py        # Camada de acesso ao banco (SQLite)
 ├── utils.py            # Validação de CPF, formatação de CEP/CPF
+├── assets/
+│   └── logo_small.png  # Logo da clínica, exibida no menu lateral
 └── requirements.txt    # Dependências
 ```
 
