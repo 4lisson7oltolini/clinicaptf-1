@@ -1,3 +1,5 @@
+"""Funções auxiliares de validação e formatação."""
+
 import re
 
 
@@ -35,6 +37,14 @@ def formatar_cep(cep: str) -> str:
     if len(cep) != 8:
         return cep
     return f"{cep[0:5]}-{cep[5:8]}"
+
+
+def validar_email(email: str) -> bool:
+    """Validação simples de formato de e-mail."""
+    if not email:
+        return False
+    padrao = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+    return re.match(padrao, email.strip()) is not None
 
 
 ESTADOS_BR = [
