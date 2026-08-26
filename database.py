@@ -30,7 +30,6 @@ def init_db():
                 nome_completo TEXT NOT NULL,
                 data_nascimento TEXT,
                 cpf TEXT UNIQUE,
-                rg TEXT,
                 sexo TEXT,
                 estado_civil TEXT,
                 cep TEXT,
