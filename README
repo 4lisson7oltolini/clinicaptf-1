@@ -40,7 +40,11 @@ Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira e
   - Gráfico de pacientes por sexo (pizza) e por estado (barras).
   - Gráfico de consultas por status.
   - Exportação de pacientes e consultas em CSV.
-- **Configurações**: dados básicos da clínica e informações do banco de dados.
+- **Configurações**:
+  - Dados da clínica: nome, telefone, e-mail (validado) e endereço — persistidos no banco.
+  - Filial: seleção de estado (UF) e cidade, exibida no menu lateral.
+  - Acessibilidade: tamanho da fonte (80%–150%), alto contraste, redução de animações e espaçamento das listas — aplicado em tempo real na interface.
+  - Informações do banco de dados.
 
 ## Próximos passos sugeridos
 
