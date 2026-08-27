@@ -1,6 +1,7 @@
 """Funções auxiliares de validação e formatação."""
 
 import re
+import requests
 
 
 def limpar_numeros(valor: str) -> str:
@@ -45,6 +46,41 @@ def validar_email(email: str) -> bool:
         return False
     padrao = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
     return re.match(padrao, email.strip()) is not None
+
+
+def buscar_endereco_por_cep(cep: str):
+    """
+    Consulta o endereço de um CEP usando a API pública ViaCEP.
+
+    Retorna (True, dados) em caso de sucesso, onde dados é um dict com
+    'logradouro', 'bairro', 'localidade' (cidade) e 'uf' (estado).
+    Retorna (False, mensagem_de_erro) caso o CEP seja inválido, não seja
+    encontrado, ou haja falha de conexão.
+    """
+    cep_limpo = limpar_numeros(cep)
+    if len(cep_limpo) != 8:
+        return False, "Digite um CEP válido com 8 dígitos antes de buscar."
+
+    try:
+        resposta = requests.get(f"https://viacep.com.br/ws/{cep_limpo}/json/", timeout=5)
+        resposta.raise_for_status()
+        dados = resposta.json()
+    except requests.exceptions.Timeout:
+        return False, "A busca do CEP demorou demais. Tente novamente."
+    except requests.exceptions.RequestException:
+        return False, "Não foi possível consultar o CEP agora. Verifique sua conexão e tente novamente."
+    except ValueError:
+        return False, "A resposta do serviço de CEP veio em um formato inesperado."
+
+    if not isinstance(dados, dict) or dados.get("erro"):
+        return False, "CEP não encontrado. Verifique o número digitado."
+
+    return True, {
+        "logradouro": dados.get("logradouro", "") or "",
+        "bairro": dados.get("bairro", "") or "",
+        "localidade": dados.get("localidade", "") or "",
+        "uf": dados.get("uf", "") or "",
+    }
 
 
 ESTADOS_BR = [

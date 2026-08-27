@@ -13,7 +13,10 @@ from database import (
     excluir_consulta, contar_consultas_hoje,
     salvar_configuracoes, obter_todas_configuracoes,
 )
-from utils import validar_cpf, formatar_cpf, formatar_cep, validar_email, ESTADOS_BR
+from utils import (
+    validar_cpf, formatar_cpf, formatar_cep, validar_email,
+    buscar_endereco_por_cep, ESTADOS_BR,
+)
 
 # ------------------------------------------------------------------
 # Banco de dados e configurações salvas (carregados antes da UI
@@ -323,70 +326,112 @@ def pagina_inicio():
 # ------------------------------------------------------------------
 # Página: Pacientes (lista + formulário)
 # ------------------------------------------------------------------
+def _chaves_formulario_paciente(pid):
+    """Lista de chaves de session_state usadas pelo formulário de um paciente."""
+    return [
+        f"pac_nome_{pid}", f"pac_data_nasc_{pid}", f"pac_cpf_{pid}", f"pac_rg_{pid}",
+        f"pac_sexo_{pid}", f"pac_estado_civil_{pid}", f"pac_cep_{pid}",
+        f"pac_logradouro_{pid}", f"pac_numero_{pid}", f"pac_complemento_{pid}",
+        f"pac_bairro_{pid}", f"pac_cidade_{pid}", f"pac_estado_{pid}",
+    ]
+
+
+def _limpar_formulario_paciente(pid):
+    for chave in _chaves_formulario_paciente(pid):
+        st.session_state.pop(chave, None)
+
+
 def formulario_paciente():
     editando = st.session_state.editando_id is not None
     dados_atuais = obter_paciente(st.session_state.editando_id) if editando else {}
+    pid = st.session_state.editando_id if editando else "novo"
 
     titulo = "Editar Paciente" if editando else "Cadastro de Paciente"
     st.subheader(titulo)
     st.markdown("<p class='cv-subtitulo'>Preencha os dados do paciente</p>", unsafe_allow_html=True)
     st.write("")
 
-    with st.form("form_paciente", clear_on_submit=not editando):
-        st.markdown("**👤 Informações do Paciente**")
-        c1, c2, c3 = st.columns(3)
-        nome = c1.text_input("Nome Completo*", value=dados_atuais.get("nome_completo", ""))
+    # Semeia o session_state apenas na primeira vez que este paciente/formulário
+    # aparece, para não sobrescrever o que o usuário já digitou em reruns
+    # causados pelo botão "Buscar CEP".
+    if f"pac_nome_{pid}" not in st.session_state:
+        st.session_state[f"pac_nome_{pid}"] = dados_atuais.get("nome_completo", "")
+        st.session_state[f"pac_cpf_{pid}"] = dados_atuais.get("cpf", "")
+        st.session_state[f"pac_rg_{pid}"] = dados_atuais.get("rg", "")
+        st.session_state[f"pac_sexo_{pid}"] = dados_atuais.get("sexo") or "Selecione"
+        st.session_state[f"pac_estado_civil_{pid}"] = dados_atuais.get("estado_civil") or "Selecione"
+        st.session_state[f"pac_cep_{pid}"] = dados_atuais.get("cep", "")
+        st.session_state[f"pac_logradouro_{pid}"] = dados_atuais.get("logradouro", "")
+        st.session_state[f"pac_numero_{pid}"] = dados_atuais.get("numero", "")
+        st.session_state[f"pac_complemento_{pid}"] = dados_atuais.get("complemento", "")
+        st.session_state[f"pac_bairro_{pid}"] = dados_atuais.get("bairro", "")
+        st.session_state[f"pac_cidade_{pid}"] = dados_atuais.get("cidade", "")
+        st.session_state[f"pac_estado_{pid}"] = dados_atuais.get("estado") or "Selecione"
         try:
-            data_nasc_default = (
+            st.session_state[f"pac_data_nasc_{pid}"] = (
                 date.fromisoformat(dados_atuais["data_nascimento"])
                 if dados_atuais.get("data_nascimento")
                 else None
             )
         except ValueError:
-            data_nasc_default = None
+            st.session_state[f"pac_data_nasc_{pid}"] = None
+
+    with st.form("form_paciente", clear_on_submit=False):
+        st.markdown("**👤 Informações do Paciente**")
+        c1, c2, c3 = st.columns(3)
+        nome = c1.text_input("Nome Completo*", key=f"pac_nome_{pid}")
         data_nasc = c2.date_input(
             "Data de Nascimento",
-            value=data_nasc_default,
+            key=f"pac_data_nasc_{pid}",
             min_value=date(1900, 1, 1),
             max_value=date.today(),
             format="DD/MM/YYYY",
         )
-        cpf = c3.text_input("CPF*", value=dados_atuais.get("cpf", ""), placeholder="000.000.000-00")
+        cpf = c3.text_input("CPF*", key=f"pac_cpf_{pid}", placeholder="000.000.000-00")
 
-        c4, c5, = st.columns(2)
+        c4, c5 = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
-        sexo_idx = sexo_opcoes.index(dados_atuais["sexo"]) if dados_atuais.get("sexo") in sexo_opcoes else 0
-        sexo = c4.selectbox("Sexo", sexo_opcoes, index=sexo_idx)
+        sexo = c4.selectbox("Sexo", sexo_opcoes, key=f"pac_sexo_{pid}")
 
         civil_opcoes = ["Selecione", "Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)"]
-        civil_idx = (
-            civil_opcoes.index(dados_atuais["estado_civil"])
-            if dados_atuais.get("estado_civil") in civil_opcoes
-            else 0
-        )
-        estado_civil = c5.selectbox("Estado Civil", civil_opcoes, index=civil_idx)
+        estado_civil = c5.selectbox("Estado Civil", civil_opcoes, key=f"pac_estado_civil_{pid}")
 
         st.markdown("**📍 Endereço**")
-        c6, c7 = st.columns(2)
-        cep = c6.text_input("CEP", value=dados_atuais.get("cep", ""), placeholder="00000-000")
-        logradouro = c7.text_input(
-            "Logradouro", value=dados_atuais.get("logradouro", ""), placeholder="Rua, Avenida, etc."
+        c6, c7 = st.columns([1, 2])
+        cep = c6.text_input("CEP*", key=f"pac_cep_{pid}", placeholder="00000-000")
+        with c7:
+            st.write("")
+            buscar_cep = st.form_submit_button(
+                "🔍 Buscar endereço pelo CEP", use_container_width=True
+            )
+
+        if buscar_cep:
+            sucesso, resultado = buscar_endereco_por_cep(cep)
+            if sucesso:
+                st.session_state[f"pac_logradouro_{pid}"] = resultado["logradouro"]
+                st.session_state[f"pac_bairro_{pid}"] = resultado["bairro"]
+                st.session_state[f"pac_cidade_{pid}"] = resultado["localidade"]
+                if resultado["uf"] in ESTADOS_BR:
+                    st.session_state[f"pac_estado_{pid}"] = resultado["uf"]
+                st.success("Endereço encontrado! Confira os campos abaixo.")
+            else:
+                st.error(resultado)
+
+        logradouro = st.text_input(
+            "Logradouro", key=f"pac_logradouro_{pid}", placeholder="Rua, Avenida, etc."
         )
 
         c8, c9, c10 = st.columns(3)
-        numero = c8.text_input("Número", value=dados_atuais.get("numero", ""), placeholder="Nº")
+        numero = c8.text_input("Número", key=f"pac_numero_{pid}", placeholder="Nº")
         complemento = c9.text_input(
-            "Complemento", value=dados_atuais.get("complemento", ""), placeholder="Apto, Sala, etc."
+            "Complemento", key=f"pac_complemento_{pid}", placeholder="Apto, Sala, etc."
         )
-        bairro = c10.text_input("Bairro", value=dados_atuais.get("bairro", ""))
+        bairro = c10.text_input("Bairro", key=f"pac_bairro_{pid}")
 
         c11, c12 = st.columns(2)
-        cidade = c11.text_input("Cidade", value=dados_atuais.get("cidade", ""))
+        cidade = c11.text_input("Cidade", key=f"pac_cidade_{pid}")
         estado_opcoes = ["Selecione"] + ESTADOS_BR
-        estado_idx = (
-            estado_opcoes.index(dados_atuais["estado"]) if dados_atuais.get("estado") in estado_opcoes else 0
-        )
-        estado = c12.selectbox("Estado", estado_opcoes, index=estado_idx)
+        estado = c12.selectbox("Estado", estado_opcoes, key=f"pac_estado_{pid}")
 
         st.write("")
         col_a, col_b = st.columns([1, 5])
@@ -421,6 +466,7 @@ def formulario_paciente():
                     sucesso, msg = inserir_paciente(dados)
 
                 if sucesso:
+                    _limpar_formulario_paciente(pid)
                     st.session_state.editando_id = None
                     st.success(msg)
                     st.rerun()
@@ -428,6 +474,7 @@ def formulario_paciente():
                     st.error(msg)
 
         if cancelar:
+            _limpar_formulario_paciente(pid)
             st.session_state.editando_id = None
             st.rerun()
 

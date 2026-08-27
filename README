@@ -30,6 +30,7 @@ Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira e
 - **Início**: métricas gerais (total de pacientes, consultas do dia, pendentes) e últimos cadastros.
 - **Pacientes**:
   - Cadastro com validação de CPF (algoritmo de dígitos verificadores) e bloqueio de CPF duplicado.
+  - **Autopreenchimento de endereço pelo CEP** (via API ViaCEP): digite o CEP e clique em "Buscar endereço pelo CEP" para preencher automaticamente logradouro, bairro, cidade e estado.
   - Edição e exclusão de pacientes.
   - Busca por nome ou CPF.
 - **Agenda**:
