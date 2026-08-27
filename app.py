@@ -73,7 +73,6 @@ def carregar_logo_base64():
         return base64.b64encode(_LOGO_PATH.read_bytes()).decode("utf-8")
     return None
 
-
 logo_base64 = carregar_logo_base64()
 
 # ------------------------------------------------------------------
