@@ -1,18 +1,18 @@
-# Clínica Vida - Sistema de Gestão
+#Clínica PTF - Sistema de Gestão#
 
 Dashboard em Streamlit para cadastro e gestão de pacientes, inspirado no layout de referência (menu lateral azul/teal).
 
 ## Estrutura
-
-```
-clinica_vida/
-├── app.py            # App principal (interface e páginas)
-├── database.py        # Camada de acesso ao banco (SQLite)
-├── utils.py            # Validação de CPF, formatação de CEP/CPF
+Clinicaptf-1.1/
+├── __pycache__/
 ├── assets/
-│   └── logo_small.png  # Logo da clínica, exibida no menu lateral
-└── requirements.txt    # Dependências
-```
+|      └──logo_small.png  #Logo da Clinica
+├── README.TXT
+├── app.py                #APP Principal.
+├── clinica_vida.db       
+├── database.py           #Banco de dados em SQLite.
+├── requirements.txt      #Dependencia 
+├── utils.py              #Validação de CPF e formatção de CPF e CEP.
 
 ## Como rodar
 
