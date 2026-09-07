@@ -1,6 +1,6 @@
-"""Funções auxiliares de validação e formatação."""
-
 import re
+import hashlib
+import secrets
 import requests
 
 
@@ -81,6 +81,25 @@ def buscar_endereco_por_cep(cep: str):
         "localidade": dados.get("localidade", "") or "",
         "uf": dados.get("uf", "") or "",
     }
+
+
+def hash_senha(senha: str, salt_hex: str = None):
+    """
+    Gera um hash seguro de senha usando PBKDF2-HMAC-SHA256 com salt aleatório.
+    Retorna (hash_hex, salt_hex). Se salt_hex for informado, reusa o mesmo salt
+    (usado para conferir uma senha já cadastrada).
+    """
+    if salt_hex is None:
+        salt_hex = secrets.token_hex(16)
+    salt_bytes = bytes.fromhex(salt_hex)
+    hash_bytes = hashlib.pbkdf2_hmac("sha256", senha.encode("utf-8"), salt_bytes, 100_000)
+    return hash_bytes.hex(), salt_hex
+
+
+def verificar_senha(senha: str, hash_salvo: str, salt_salvo: str) -> bool:
+    """Confere se a senha informada corresponde ao hash salvo, sem timing attack."""
+    hash_calculado, _ = hash_senha(senha, salt_salvo)
+    return secrets.compare_digest(hash_calculado, hash_salvo)
 
 
 ESTADOS_BR = [

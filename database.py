@@ -67,6 +67,19 @@ def init_db():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario TEXT UNIQUE NOT NULL,
+                senha_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                nome_completo TEXT NOT NULL,
+                papel TEXT DEFAULT 'Atendente',
+                criado_em TEXT DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
 
 
 def inserir_paciente(dados: dict):
@@ -257,3 +270,70 @@ def obter_todas_configuracoes():
     with get_connection() as conn:
         cursor = conn.execute("SELECT chave, valor FROM configuracoes")
         return {row["chave"]: row["valor"] for row in cursor.fetchall()}
+
+
+# --------------------------------------------------------------
+# Usuários (login)
+# --------------------------------------------------------------
+
+def criar_usuario(usuario: str, senha_hash: str, salt: str, nome_completo: str, papel: str = "Atendente"):
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO usuarios (usuario, senha_hash, salt, nome_completo, papel)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (usuario.strip().lower(), senha_hash, salt, nome_completo.strip(), papel),
+            )
+        return True, "Usuário criado com sucesso!"
+    except sqlite3.IntegrityError:
+        return False, "Já existe um usuário com esse nome de login."
+    except Exception as e:
+        return False, f"Erro ao criar usuário: {e}"
+
+
+def obter_usuario_por_login(usuario: str):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "SELECT * FROM usuarios WHERE usuario = ?", (usuario.strip().lower(),)
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def obter_usuario_por_id(usuario_id: int):
+    with get_connection() as conn:
+        cursor = conn.execute("SELECT * FROM usuarios WHERE id = ?", (usuario_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def listar_usuarios():
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, usuario, nome_completo, papel, criado_em FROM usuarios ORDER BY nome_completo"
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def contar_usuarios(papel: str = None):
+    with get_connection() as conn:
+        if papel:
+            cursor = conn.execute("SELECT COUNT(*) as total FROM usuarios WHERE papel = ?", (papel,))
+        else:
+            cursor = conn.execute("SELECT COUNT(*) as total FROM usuarios")
+        return cursor.fetchone()["total"]
+
+
+def excluir_usuario(usuario_id: int):
+    with get_connection() as conn:
+        conn.execute("DELETE FROM usuarios WHERE id = ?", (usuario_id,))
+
+
+def atualizar_senha_usuario(usuario_id: int, novo_hash: str, novo_salt: str):
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE usuarios SET senha_hash = ?, salt = ? WHERE id = ?",
+            (novo_hash, novo_salt, usuario_id),
+        )

@@ -1,18 +1,18 @@
-#Clínica PTF - Sistema de Gestão#
+# Clínica Vida - Sistema de Gestão
 
 Dashboard em Streamlit para cadastro e gestão de pacientes, inspirado no layout de referência (menu lateral azul/teal).
 
 ## Estrutura
-Clinicaptf-1.1/
-├── __pycache__/
+
+```
+clinica_vida/
+├── app.py            # App principal (interface e páginas)
+├── database.py        # Camada de acesso ao banco (SQLite)
+├── utils.py            # Validação de CPF, formatação de CEP/CPF
 ├── assets/
-|      └──logo_small.png  #Logo da Clinica
-├── README.TXT
-├── app.py                #APP Principal.
-├── clinica_vida.db       
-├── database.py           #Banco de dados em SQLite.
-├── requirements.txt      #Dependencia 
-├── utils.py              #Validação de CPF e formatção de CPF e CEP.
+│   └── logo_small.png  # Logo da clínica, exibida no menu lateral
+└── requirements.txt    # Dependências
+```
 
 ## Como rodar
 
@@ -27,6 +27,7 @@ Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira e
 
 ## Funcionalidades
 
+- **Login**: acesso protegido por usuário e senha (senhas nunca são salvas em texto puro — usam hash PBKDF2-HMAC-SHA256 com salt aleatório). No primeiro acesso (banco vazio), o sistema pede a criação da conta de administrador.
 - **Início**: métricas gerais (total de pacientes, consultas do dia, pendentes) e últimos cadastros.
 - **Pacientes**:
   - Cadastro com validação de CPF (algoritmo de dígitos verificadores) e bloqueio de CPF duplicado.
@@ -45,11 +46,11 @@ Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira e
   - Dados da clínica: nome, telefone, e-mail (validado) e endereço — persistidos no banco.
   - Filial: seleção de estado (UF) e cidade, exibida no menu lateral.
   - Acessibilidade: tamanho da fonte (80%–150%), alto contraste, redução de animações e espaçamento das listas — aplicado em tempo real na interface.
+  - Minha Conta: troca da própria senha.
+  - Usuários (apenas Administradores): criar novos usuários (Administrador ou Atendente) e remover usuários existentes.
   - Informações do banco de dados.
 
 ## Próximos passos sugeridos
 
-- Persistir as configurações da clínica em uma tabela `configuracoes` (hoje ficam só na sessão).
 - Autenticação de usuários (ex: `streamlit-authenticator`).
-- Integração com API de CEP (ex: ViaCEP) para autopreencher endereço.
 - Deploy no Streamlit Community Cloud ou em um servidor próprio.

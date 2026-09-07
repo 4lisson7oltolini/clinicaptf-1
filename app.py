@@ -12,10 +12,12 @@ from database import (
     inserir_consulta, listar_consultas, atualizar_status_consulta,
     excluir_consulta, contar_consultas_hoje,
     salvar_configuracoes, obter_todas_configuracoes,
+    criar_usuario, obter_usuario_por_login, obter_usuario_por_id,
+    listar_usuarios, contar_usuarios, excluir_usuario, atualizar_senha_usuario,
 )
 from utils import (
     validar_cpf, formatar_cpf, formatar_cep, validar_email,
-    buscar_endereco_por_cep, ESTADOS_BR,
+    buscar_endereco_por_cep, hash_senha, verificar_senha, ESTADOS_BR,
 )
 
 # ------------------------------------------------------------------
@@ -72,6 +74,7 @@ def carregar_logo_base64():
     if _LOGO_PATH.exists():
         return base64.b64encode(_LOGO_PATH.read_bytes()).decode("utf-8")
     return None
+
 
 logo_base64 = carregar_logo_base64()
 
@@ -217,6 +220,80 @@ _css_acessibilidade += "</style>"
 st.markdown(_css_acessibilidade, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
+# Login / autenticação
+# ------------------------------------------------------------------
+if "usuario_logado" not in st.session_state:
+    st.session_state.usuario_logado = None
+
+
+def tela_login():
+    """Exibe a tela de login (ou de criação do primeiro administrador)."""
+    st.markdown("<div style='max-width:420px; margin: 3rem auto 0 auto;'>", unsafe_allow_html=True)
+
+    if logo_base64:
+        st.markdown(
+            f'<div style="text-align:center; margin-bottom:0.5rem;">'
+            f'<img src="data:image/png;base64,{logo_base64}" style="width:64px; height:64px;" /></div>',
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        f"<h2 style='text-align:center; margin-bottom:0;'>{cfg.get('nome_clinica', 'Clínica PTF')}</h2>"
+        f"<p style='text-align:center; color:#6b7c93; margin-top:0;'>Sistema de Gestão</p>",
+        unsafe_allow_html=True,
+    )
+    st.write("")
+
+    if contar_usuarios() == 0:
+        st.info("Primeiro acesso: crie a conta de administrador do sistema.")
+        with st.form("form_primeiro_admin"):
+            nome_completo = st.text_input("Seu nome completo")
+            usuario = st.text_input("Usuário (login)", placeholder="ex: admin")
+            senha = st.text_input("Senha", type="password", help="Mínimo de 6 caracteres.")
+            confirmar = st.text_input("Confirmar senha", type="password")
+            if st.form_submit_button("Criar conta e entrar", type="primary", use_container_width=True):
+                if not nome_completo.strip() or not usuario.strip():
+                    st.error("Preencha seu nome e um usuário de login.")
+                elif len(senha) < 6:
+                    st.error("A senha deve ter pelo menos 6 caracteres.")
+                elif senha != confirmar:
+                    st.error("As senhas não conferem.")
+                else:
+                    senha_hash, salt = hash_senha(senha)
+                    sucesso, msg = criar_usuario(
+                        usuario, senha_hash, salt, nome_completo, papel="Administrador"
+                    )
+                    if sucesso:
+                        novo = obter_usuario_por_login(usuario)
+                        st.session_state.usuario_logado = {
+                            "id": novo["id"], "usuario": novo["usuario"],
+                            "nome_completo": novo["nome_completo"], "papel": novo["papel"],
+                        }
+                        st.rerun()
+                    else:
+                        st.error(msg)
+    else:
+        with st.form("form_login"):
+            usuario = st.text_input("Usuário")
+            senha = st.text_input("Senha", type="password")
+            if st.form_submit_button("Entrar", type="primary", use_container_width=True):
+                dados_usuario = obter_usuario_por_login(usuario)
+                if dados_usuario and verificar_senha(senha, dados_usuario["senha_hash"], dados_usuario["salt"]):
+                    st.session_state.usuario_logado = {
+                        "id": dados_usuario["id"], "usuario": dados_usuario["usuario"],
+                        "nome_completo": dados_usuario["nome_completo"], "papel": dados_usuario["papel"],
+                    }
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha inválidos.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+if st.session_state.usuario_logado is None:
+    tela_login()
+    st.stop()
+
+# ------------------------------------------------------------------
 # Sidebar
 # ------------------------------------------------------------------
 with st.sidebar:
@@ -266,6 +343,20 @@ with st.sidebar:
 
     st.markdown("<div style='flex-grow:1;'></div>", unsafe_allow_html=True)
     st.markdown("---")
+
+    _usuario_atual = st.session_state.usuario_logado
+    st.markdown(
+        f"<div style='font-size:0.8rem; line-height:1.4; padding-bottom:0.4rem;'>"
+        f"👤 {_usuario_atual['nome_completo']}<br>"
+        f"<span style='opacity:0.75;'>{_usuario_atual['papel']}</span></div>",
+        unsafe_allow_html=True,
+    )
+    if st.button("Sair", use_container_width=True, key="btn_logout"):
+        st.session_state.usuario_logado = None
+        st.session_state.pagina = "Início"
+        st.session_state.editando_id = None
+        st.rerun()
+
     st.button("Ajuda", use_container_width=True)
 
 
@@ -388,7 +479,7 @@ def formulario_paciente():
         )
         cpf = c3.text_input("CPF*", key=f"pac_cpf_{pid}", placeholder="000.000.000-00")
 
-        c4, c5 = st.columns(2)
+        c4, c5, = st.columns(2)
         sexo_opcoes = ["Selecione", "Feminino", "Masculino", "Outro"]
         sexo = c4.selectbox("Sexo", sexo_opcoes, key=f"pac_sexo_{pid}")
 
@@ -781,6 +872,76 @@ def pagina_configuracoes():
             st.session_state.config.update(novas)
             st.success("Preferências de acessibilidade salvas!")
             st.rerun()
+
+    st.write("")
+    st.subheader("👤 Minha Conta")
+    usuario_logado = st.session_state.usuario_logado
+    st.write(
+        f"Logado como **{usuario_logado['nome_completo']}** "
+        f"(usuário `{usuario_logado['usuario']}`, papel: {usuario_logado['papel']})."
+    )
+    with st.form("form_trocar_senha"):
+        senha_atual = st.text_input("Senha atual", type="password")
+        c_s1, c_s2 = st.columns(2)
+        nova_senha = c_s1.text_input("Nova senha", type="password", help="Mínimo de 6 caracteres.")
+        confirmar_nova = c_s2.text_input("Confirmar nova senha", type="password")
+        if st.form_submit_button("Alterar Senha", type="primary"):
+            dados_usuario = obter_usuario_por_id(usuario_logado["id"])
+            if not dados_usuario or not verificar_senha(senha_atual, dados_usuario["senha_hash"], dados_usuario["salt"]):
+                st.error("Senha atual incorreta.")
+            elif len(nova_senha) < 6:
+                st.error("A nova senha deve ter pelo menos 6 caracteres.")
+            elif nova_senha != confirmar_nova:
+                st.error("As senhas não conferem.")
+            else:
+                novo_hash, novo_salt = hash_senha(nova_senha)
+                atualizar_senha_usuario(usuario_logado["id"], novo_hash, novo_salt)
+                st.success("Senha alterada com sucesso!")
+
+    # ----------------------------------------------------------
+    # Usuários (apenas Administrador)
+    # ----------------------------------------------------------
+    if usuario_logado["papel"] == "Administrador":
+        st.write("")
+        st.subheader("👥 Usuários do Sistema")
+
+        with st.expander("➕ Adicionar novo usuário"):
+            with st.form("form_novo_usuario", clear_on_submit=True):
+                c_u1, c_u2 = st.columns(2)
+                novo_nome = c_u1.text_input("Nome completo")
+                novo_login = c_u2.text_input("Usuário (login)")
+                c_u3, c_u4 = st.columns(2)
+                nova_senha_usuario = c_u3.text_input("Senha", type="password", help="Mínimo de 6 caracteres.")
+                novo_papel = c_u4.selectbox("Papel", ["Atendente", "Administrador"])
+                if st.form_submit_button("Criar Usuário", type="primary"):
+                    if not novo_nome.strip() or not novo_login.strip():
+                        st.error("Preencha nome e usuário.")
+                    elif len(nova_senha_usuario) < 6:
+                        st.error("A senha deve ter pelo menos 6 caracteres.")
+                    else:
+                        h, s = hash_senha(nova_senha_usuario)
+                        sucesso, msg = criar_usuario(novo_login, h, s, novo_nome, papel=novo_papel)
+                        if sucesso:
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+
+        usuarios = listar_usuarios()
+        for u in usuarios:
+            with st.container(border=True):
+                c_l1, c_l2 = st.columns([4, 1])
+                c_l1.markdown(f"**{u['nome_completo']}**  \n`{u['usuario']}` · {u['papel']}")
+                eh_o_proprio = u["id"] == usuario_logado["id"]
+                eh_ultimo_admin = u["papel"] == "Administrador" and contar_usuarios(papel="Administrador") <= 1
+                if eh_o_proprio:
+                    c_l2.caption("Você")
+                elif eh_ultimo_admin:
+                    c_l2.caption("Único admin")
+                else:
+                    if c_l2.button("🗑️ Remover", key=f"excluir_usuario_{u['id']}"):
+                        excluir_usuario(u["id"])
+                        st.rerun()
 
     st.write("")
     st.subheader("💾 Banco de Dados")
