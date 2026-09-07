@@ -72,7 +72,7 @@ def init_db():
 def inserir_paciente(dados: dict):
     """Insere um novo paciente. Retorna (sucesso: bool, mensagem: str)."""
     campos = [
-        "nome_completo", "data_nascimento", "cpf", "rg", "sexo",
+        "nome_completo", "data_nascimento", "cpf", "sexo",
         "estado_civil", "cep", "logradouro", "numero", "complemento",
         "bairro", "cidade", "estado",
     ]
@@ -95,7 +95,7 @@ def inserir_paciente(dados: dict):
 
 def atualizar_paciente(paciente_id: int, dados: dict):
     campos = [
-        "nome_completo", "data_nascimento", "cpf", "rg", "sexo",
+        "nome_completo", "data_nascimento", "cpf", "sexo",
         "estado_civil", "cep", "logradouro", "numero", "complemento",
         "bairro", "cidade", "estado",
     ]
