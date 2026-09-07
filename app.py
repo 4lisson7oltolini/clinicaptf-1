@@ -37,6 +37,7 @@ _DEFAULTS_CONFIG = {
     "alto_contraste": "False",
     "reduzir_animacoes": "False",
     "tema_tabela": "Confortável",
+    "tema": "Claro",
 }
 
 if "config" not in st.session_state:
@@ -160,6 +161,8 @@ st.markdown(
 _tamanho_fonte = cfg.get("tamanho_fonte", "100")
 _alto_contraste = cfg.get("alto_contraste", "False") == "True"
 _reduzir_animacoes = cfg.get("reduzir_animacoes", "False") == "True"
+_tema = cfg.get("tema", "Claro")
+_tema_escuro = _tema == "Escuro"
 
 _css_acessibilidade = f"""
 <style>
@@ -167,51 +170,306 @@ html {{
     font-size: {_tamanho_fonte}% !important;
 }}
 """
+if _tema_escuro:
+    _css_acessibilidade += """
+/* =========================================================
+   TEMA ESCURO - CLÍNICA PTF
+   ========================================================= */
+
+.stApp {
+    background-color: #121820 !important;
+    color: #f1f5f9 !important;
+}
+
+/* Área principal */
+.main .block-container {
+    background-color: #121820 !important;
+}
+
+/* Textos */
+.stApp p,
+.stApp span,
+.stApp label,
+.stApp div,
+.stApp h1,
+.stApp h2,
+.stApp h3,
+.stApp h4,
+.stApp h5,
+.stApp h6 {
+    color: #f1f5f9;
+}
+
+h1, h2, h3, h4 {
+    color: #ffffff !important;
+}
+
+/* Subtítulos */
+.cv-subtitulo {
+    color: #a8b3c2 !important;
+}
+
+/* Cards */
+.cv-metric,
+div[data-testid="stForm"],
+div[data-testid="stContainer"] {
+    background-color: #1c2633 !important;
+    border-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+/* Inputs */
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input {
+    background-color: #1c2633 !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+
+/* Selectbox */
+div[data-baseweb="select"] > div {
+    background-color: #1c2633 !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+
+/* Dropdown */
+ul[role="listbox"] {
+    background-color: #1c2633 !important;
+}
+
+ul[role="listbox"] li {
+    color: #ffffff !important;
+}
+
+ul[role="listbox"] li:hover {
+    background-color: #263548 !important;
+}
+
+/* Date input */
+div[data-baseweb="input"] {
+    background-color: #1c2633 !important;
+}
+
+div[data-baseweb="input"] input {
+    color: #ffffff !important;
+}
+
+/* Botões */
+.stButton > button {
+    background-color: #1c2633 !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+
+.stButton > button:hover {
+    background-color: #263548 !important;
+    border-color: #1596ac !important;
+}
+
+/* Botão principal */
+.stButton > button[kind="primary"] {
+    background-color: #1596ac !important;
+    color: #ffffff !important;
+    border-color: #1596ac !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background-color: #0d7c90 !important;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    color: #cbd5e1 !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #1596ac !important;
+}
+
+/* Tabelas */
+div[data-testid="stDataFrame"] {
+    background-color: #1c2633 !important;
+}
+
+/* Métricas */
+.cv-metric div {
+    color: #f1f5f9 !important;
+}
+
+/* Separadores */
+hr {
+    border-color: #334155 !important;
+}
+
+/* Expander */
+div[data-testid="stExpander"] {
+    background-color: #1c2633 !important;
+    border-color: #334155 !important;
+}
+
+/* Alertas */
+div[data-testid="stAlert"] {
+    background-color: #1c2633 !important;
+}
+
+/* Checkbox */
+div[data-testid="stCheckbox"] label {
+    color: #f1f5f9 !important;
+}
+
+/* Radio */
+div[data-testid="stRadio"] label {
+    color: #f1f5f9 !important;
+}
+
+/* Slider */
+div[data-testid="stSlider"] {
+    color: #f1f5f9 !important;
+}
+
+/* Captions */
+.stCaption,
+div[data-testid="stCaptionContainer"] {
+    color: #94a3b8 !important;
+}
+
+/* Links */
+a {
+    color: #5ed6e8 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #121820;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1596ac;
+}
+"""
 
 if _alto_contraste:
-    _css_acessibilidade += """
+    if _tema_escuro:
+        _css_acessibilidade += """
 section[data-testid="stSidebar"] {
     background: #000000 !important;
 }
+
 section[data-testid="stSidebar"] * {
     color: #ffffff !important;
 }
+
+body,
+.stApp,
+.main,
+.main .block-container {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+.stApp p,
+.stApp span,
+.stApp label,
+.stApp div {
+    color: #ffffff;
+}
+
+h1, h2, h3, h4 {
+    color: #ffffff !important;
+}
+
+div[data-testid="stForm"],
+.cv-metric,
+div[data-testid="stContainer"] {
+    border: 2px solid #ffffff !important;
+    background-color: #111111 !important;
+}
+
+.stButton > button {
+    border: 2px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+.stButton > button[kind="primary"] {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+a,
+.cv-subtitulo {
+    color: #ffffff !important;
+    text-decoration: underline !important;
+}
+
+input,
+textarea,
+select {
+    border: 2px solid #ffffff !important;
+    background-color: #111111 !important;
+    color: #ffffff !important;
+}
+"""
+    else:
+        _css_acessibilidade += """
+section[data-testid="stSidebar"] {
+    background: #000000 !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
+
 section[data-testid="stSidebar"] .stButton button:hover {
     background-color: rgba(255, 255, 255, 0.35) !important;
 }
+
 body, .stApp, p, span, label, div {
     color: #000000;
 }
+
 h1, h2, h3, h4 {
     color: #000000 !important;
 }
-div[data-testid="stForm"], .cv-metric, div[data-testid="stContainer"] {
+
+div[data-testid="stForm"],
+.cv-metric,
+div[data-testid="stContainer"] {
     border: 2px solid #000000 !important;
     background-color: #ffffff !important;
 }
+
 .stButton > button {
     border: 2px solid #000000 !important;
 }
+
 .stButton > button[kind="primary"] {
     background-color: #000000 !important;
     border-color: #000000 !important;
     color: #ffffff !important;
 }
-a, .cv-subtitulo {
+
+a,
+.cv-subtitulo {
     color: #000000 !important;
     text-decoration: underline !important;
 }
-input, textarea, select {
-    border: 2px solid #000000 !important;
-}
-"""
 
-if _reduzir_animacoes:
-    _css_acessibilidade += """
-*, *::before, *::after {
-    transition: none !important;
-    animation: none !important;
-    scroll-behavior: auto !important;
+input,
+textarea,
+select {
+    border: 2px solid #000000 !important;
 }
 """
 
@@ -834,8 +1092,24 @@ def pagina_configuracoes():
     # Acessibilidade
     # ----------------------------------------------------------
     st.write("")
-    st.subheader("♿ Acessibilidade")
+    st.subheader("Aparência e Acessibilidade")
     with st.form("form_config_acessibilidade"):
+
+        tema_opcoes = ["Claro", "Escuro"]
+        tema_salvo = cfg.get("tema", "Claro")
+        tema_idx = (
+            tema_opcoes.index(tema_salvo)
+            if tema_salvo in tema_opcoes
+            else 0
+        )
+
+        tema = st.radio(
+            "Tema do sistema",
+            tema_opcoes,
+            index=tema_idx,
+            horizontal=True,
+            help="Escolha entre o tema claro e o tema escuro.",
+        )
         tamanho_fonte = st.slider(
             "Tamanho da fonte (%)",
             min_value=80, max_value=150,
@@ -843,7 +1117,7 @@ def pagina_configuracoes():
             step=10,
             help="Ajusta o tamanho de todo o texto do sistema.",
         )
-
+        
         c7, c8 = st.columns(2)
         alto_contraste = c7.checkbox(
             "Alto contraste",
@@ -863,6 +1137,7 @@ def pagina_configuracoes():
 
         if st.form_submit_button("Salvar Acessibilidade", type="primary"):
             novas = {
+                "tema": tema,
                 "tamanho_fonte": str(tamanho_fonte),
                 "alto_contraste": str(alto_contraste),
                 "reduzir_animacoes": str(reduzir_animacoes),
