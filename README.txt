@@ -45,7 +45,7 @@ Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira e
 - **Configurações**:
   - Dados da clínica: nome, telefone, e-mail (validado) e endereço — persistidos no banco.
   - Filial: seleção de estado (UF) e cidade, exibida no menu lateral.
-  - Acessibilidade: tamanho da fonte (80%–150%), alto contraste, redução de animações e espaçamento das listas — aplicado em tempo real na interface.
+  - Acessibilidade: tamanho da fonte (80%–150%), alto contraste, **modo escuro**, redução de animações e espaçamento das listas — aplicado em tempo real na interface.
   - Minha Conta: troca da própria senha.
   - Usuários (apenas Administradores): criar novos usuários (Administrador ou Atendente) e remover usuários existentes.
   - Informações do banco de dados.
