@@ -1,8 +1,3 @@
-"""
-Módulo de acesso ao banco de dados (SQLite) para o Clínica Vida.
-Responsável por criar a tabela e fazer CRUD de pacientes.
-"""
-
 import sqlite3
 from contextlib import contextmanager
 

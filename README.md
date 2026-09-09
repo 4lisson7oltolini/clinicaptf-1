@@ -16,6 +16,8 @@ clinica_vida/
 
 ## Como rodar
 
+### Local
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
@@ -24,6 +26,23 @@ streamlit run app.py
 O navegador abrirá automaticamente em `http://localhost:8501`.
 
 Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira execução — não precisa configurar nada.
+
+### Docker
+
+```bash
+docker build -t clinicaptf .
+docker run -d --name clinicaptf -p 8501:8501 -v "${PWD}/data:/data" -e CLINICA_DB_PATH=/data/clinica_vida.db clinicaptf
+```
+
+Ou com Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+A aplicação ficará disponível em `http://localhost:8501`.
+
+O banco SQLite será salvo na pasta `data/` do projeto para manter o estado entre reinícios do container.
 
 ## Funcionalidades
 
