@@ -1,0 +1,41 @@
+name: Clínica PTF - CI
+
+on:
+  push:
+    branches:
+      - main
+      - addfunction
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Baixar código
+        uses: actions/checkout@v6
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Verificar sintaxe
+        run: |
+          python -m compileall .
+
+      - name: Executar testes
+        run: |
+          pytest
