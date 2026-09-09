@@ -1,75 +1,195 @@
-# Clínica Vida - Sistema de Gestão
+# Clínica PTF - Sistema de Gestão
 
-Dashboard em Streamlit para cadastro e gestão de pacientes, inspirado no layout de referência (menu lateral azul/teal).
+Aplicação web em Streamlit para gestão de clínica, com cadastro e acompanhamento de pacientes, agendamento de consultas, relatórios e configurações da clínica.
 
-## Estrutura
+A estrutura foi reorganizada para separar a lógica por responsabilidade, em vez de manter tudo em um único arquivo `app.py`.
 
-```
-clinica_vida/
-├── app.py            # App principal (interface e páginas)
-├── database.py        # Camada de acesso ao banco (SQLite)
-├── utils.py            # Validação de CPF, formatação de CEP/CPF
+## Visão geral
+
+Este projeto foi evoluído de uma base monolítica para uma estrutura modular, com uma entrada principal responsável por:
+
+- inicializar o banco SQLite;
+- carregar as configurações salvas;
+- montar o menu lateral;
+- aplicar estilos globais;
+- controlar login/sessão do usuário;
+- direcionar para as páginas por módulo.
+
+Com isso, a manutenção ficou mais simples, especialmente para crescer com novas telas e regras de negócio.
+
+## Estrutura do projeto
+
+```text
+clinicaptf-1/
+├── app.py                  # Entrada principal da aplicação
+├── database.py            # Banco SQLite e operações CRUD
+├── utils.py               # Utilitários gerais (CPF, CEP, hashing, validações)
+├── requirements.txt       # Dependências do projeto
+├── clinica_vida.db        # Banco local SQLite (criado automaticamente)
 ├── assets/
-│   └── logo_small.png  # Logo da clínica, exibida no menu lateral
-└── requirements.txt    # Dependências
+│   └── logo_small.png     # Logo exibida no menu lateral
+├── modules/
+│   ├── __init__.py
+│   ├── auth.py            # Tela de login e criação do primeiro administrador
+│   ├── home.py            # Dashboard inicial / visão geral
+│   ├── patients.py        # Cadastro, busca, edição e exclusão de pacientes
+│   ├── agenda.py          # Agendamento e controle de consultas
+│   ├── reports.py         # Relatórios e exportação CSV
+│   ├── settings.py        # Configurações da clínica e usuários
+│   ├── help.py            # Página de ajuda e suporte
+│   └── styles.py          # Estilos globais e acessibilidade
+└── README.md              # Documentação do projeto
 ```
 
-## Como rodar
+## Arquitetura modular
 
-### Local
+A partir da refatoração, a aplicação foi separada em módulos com foco em responsabilidade:
+
+- `app.py`: roteador principal da aplicação
+- `modules/auth.py`: autenticação, login e primeiro usuário administrador
+- `modules/home.py`: tela inicial com métricas e principais informações
+- `modules/patients.py`: gestão de pacientes
+- `modules/agenda.py`: agenda e consultas
+- `modules/reports.py`: gráficos e exportação
+- `modules/settings.py`: clínicas, acessibilidade, usuários e senha
+- `modules/help.py`: documentação e suporte interno
+- `modules/styles.py`: estilos visuais e ajustes de acessibilidade
+
+Essa divisão facilita a leitura do código, reduz acoplamento e deixa cada tela mais independente.
+
+## Como executar localmente
+
+### 1) Instalar dependências
 
 ```bash
 pip install -r requirements.txt
+```
+
+### 2) Iniciar a aplicação
+
+```bash
 streamlit run app.py
 ```
 
-O navegador abrirá automaticamente em `http://localhost:8501`.
+A aplicação ficará disponível em:
 
-Um arquivo `clinica_vida.db` (SQLite) será criado automaticamente na primeira execução — não precisa configurar nada.
-
-### Docker
-
-```bash
-docker build -t clinicaptf .
-docker run -d --name clinicaptf -p 8501:8501 -v "${PWD}/data:/data" -e CLINICA_DB_PATH=/data/clinica_vida.db clinicaptf
+```text
+http://localhost:8501
 ```
 
-Ou com Docker Compose:
+### Banco de dados
 
-```bash
-docker compose up --build
+Por padrão, a aplicação usa o arquivo SQLite:
+
+```text
+clinica_vida.db
 ```
 
-A aplicação ficará disponível em `http://localhost:8501`.
+Esse arquivo é criado automaticamente na primeira execução.
 
-O banco SQLite será salvo na pasta `data/` do projeto para manter o estado entre reinícios do container.
+Se quiser definir um caminho customizado, é possível usar uma variável de ambiente:
+
+```bash
+set CLINICA_DB_PATH=C:\caminho\para\dados\clinica_vida.db
+```
+
+ou no Linux/macOS:
+
+```bash
+export CLINICA_DB_PATH=/caminho/para/dados/clinica_vida.db
+```
 
 ## Funcionalidades
 
-- **Login**: acesso protegido por usuário e senha (senhas nunca são salvas em texto puro — usam hash PBKDF2-HMAC-SHA256 com salt aleatório). No primeiro acesso (banco vazio), o sistema pede a criação da conta de administrador.
-- **Início**: métricas gerais (total de pacientes, consultas do dia, pendentes) e últimos cadastros.
-- **Pacientes**:
-  - Cadastro com validação de CPF (algoritmo de dígitos verificadores) e bloqueio de CPF duplicado.
-  - **Autopreenchimento de endereço pelo CEP** (via API ViaCEP): digite o CEP e clique em "Buscar endereço pelo CEP" para preencher automaticamente logradouro, bairro, cidade e estado.
-  - Edição e exclusão de pacientes.
-  - Busca por nome ou CPF.
-- **Agenda**:
-  - Agendamento de consultas vinculadas a um paciente (data, hora, tipo, médico).
-  - Alteração de status (Agendada, Confirmada, Concluída, Cancelada) direto na lista.
-  - Filtro por data.
-- **Relatórios**:
-  - Gráfico de pacientes por sexo (pizza) e por estado (barras).
-  - Gráfico de consultas por status.
-  - Exportação de pacientes e consultas em CSV.
-- **Configurações**:
-  - Dados da clínica: nome, telefone, e-mail (validado) e endereço — persistidos no banco.
-  - Filial: seleção de estado (UF) e cidade, exibida no menu lateral.
-  - Acessibilidade: tamanho da fonte (80%–150%), alto contraste, **modo escuro**, redução de animações e espaçamento das listas — aplicado em tempo real na interface.
-  - Minha Conta: troca da própria senha.
-  - Usuários (apenas Administradores): criar novos usuários (Administrador ou Atendente) e remover usuários existentes.
-  - Informações do banco de dados.
+### Autenticação e segurança
+
+- Login com usuário e senha
+- Primeiro acesso cria automaticamente um administrador
+- Senhas armazenadas com hash PBKDF2-HMAC-SHA256 + salt
+- Sessão de usuário controlada pelo Streamlit `session_state`
+
+### Tela inicial
+
+- Total de pacientes cadastrados
+- Consultas do dia
+- Consultas pendentes
+- Últimos pacientes cadastrados
+
+### Pacientes
+
+- Cadastro de pacientes
+- Validação de CPF
+- Bloqueio de CPF duplicado
+- Busca por nome ou CPF
+- Edição e exclusão
+- Autopreenchimento de endereço via CEP (ViaCEP)
+
+### Agenda
+
+- Agendamento de consultas
+- Vinculação com paciente
+- Campos de data, hora, tipo, médico e observações
+- Alteração de status da consulta
+- Filtro por data
+
+### Relatórios
+
+- Gráficos por sexo
+- Gráficos por estado
+- Gráficos por status de consulta
+- Exportação de dados em CSV
+
+### Configurações
+
+- Dados da clínica
+- Filial (estado e cidade)
+- Ajustes de acessibilidade
+- Modo escuro
+- Tamanho da fonte
+- Alto contraste
+- Redução de animações
+- Minha conta e troca de senha
+- Gestão de usuários (administrador e atendente)
+- Visualização de informações do banco
+
+### Ajuda e suporte
+
+- Central de ajuda dentro da aplicação
+- Conteúdo de suporte para usuários e manutenção do sistema
+
+## Dependências principais
+
+- Streamlit
+- SQLite3
+- Pandas
+- Plotly
+- Pillow
+- Requests
+- PyJWT / outras libs conforme necessário pelo ambiente
+
+## Observações importantes
+
+- A estrutura modular foi criada para facilitar manutenção e crescimento do projeto.
+- O arquivo `app.py` agora atua como roteador principal e não concentra todo o código da aplicação.
+- O uso do arquivo `CLINICA_DB_PATH` permite adaptar o local do banco conforme o ambiente.
 
 ## Próximos passos sugeridos
 
-- Autenticação de usuários (ex: `streamlit-authenticator`).
-- Deploy no Streamlit Community Cloud ou em um servidor próprio.
+- Melhorar o sistema de permissões por perfil de usuário
+- Adicionar logs e auditoria de ações
+- Criar testes automatizados
+- Preparar deploy em servidor ou plataforma cloud
+- Expandir a página de relatórios com filtros e comparativos por período
+
+## Contribuição
+
+Para contribuir com o projeto:
+
+1. Faça um fork do repositório
+2. Crie uma branch para sua feature ou correção
+3. Faça o commit das alterações
+4. Abra um pull request com descrição clara da mudança
+
+## Licença
+
+Este projeto é destinado a uso interno/educacional e pode ser adaptado conforme a necessidade da clínica ou equipe responsável.
